@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Library Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="header">
+        <div>
+            <h1>📚 Library Management System</h1>
+            <p>Manage books, members, and borrowing records</p>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Dashboard -->
+        <section class="dashboard">
+
+            <div class="stat-card">
+                <span class="stat-icon">📚</span>
+                <div>
+                    <h3 id="totalBooks">0</h3>
+                    <p>Total Books</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <span class="stat-icon">📖</span>
+                <div>
+                    <h3 id="availableBooks">0</h3>
+                    <p>Available Copies</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <span class="stat-icon">👥</span>
+                <div>
+                    <h3 id="totalMembers">0</h3>
+                    <p>Members</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <span class="stat-icon">🔖</span>
+                <div>
+                    <h3 id="activeBorrowings">0</h3>
+                    <p>Active Borrowings</p>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- Navigation -->
+        <nav class="tabs">
+
+            <button class="tab-button active" onclick="showSection('booksSection', this)">
+                📚 Books
+            </button>
+
+            <button class="tab-button" onclick="showSection('membersSection', this)">
+                👥 Members
+            </button>
+
+            <button class="tab-button" onclick="showSection('borrowingsSection', this)">
+                📖 Borrowings
+            </button>
+
+        </nav>
+
+
+        <!-- Books Section -->
+        <section id="booksSection" class="content-section">
+
+            <div class="section-header">
+                <div>
+                    <h2>Books</h2>
+                    <p>Manage your library collection</p>
+                </div>
+
+                <button class="primary-button" onclick="openBookForm()">
+                    + Add Book
+                </button>
+            </div>
+
+            <div class="toolbar">
+                <input
+                    type="text"
+                    id="bookSearch"
+                    placeholder="🔍 Search books..."
+                    oninput="filterBooks()"
+                >
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Available</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="booksTableBody"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+
+        <!-- Members Section -->
+        <section id="membersSection" class="content-section hidden">
+
+            <div class="section-header">
+                <div>
+                    <h2>Members</h2>
+                    <p>Manage registered library members</p>
+                </div>
+
+                <button class="primary-button" onclick="openMemberForm()">
+                    + Add Member
+                </button>
+            </div>
+
+            <div class="toolbar">
+                <input
+                    type="text"
+                    id="memberSearch"
+                    placeholder="🔍 Search members..."
+                    oninput="filterMembers()"
+                >
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="membersTableBody"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+
+        <!-- Borrowings Section -->
+        <section id="borrowingsSection" class="content-section hidden">
+
+            <div class="section-header">
+                <div>
+                    <h2>Borrowings</h2>
+                    <p>Track borrowed and returned books</p>
+                </div>
+
+                <button class="primary-button" onclick="openBorrowForm()">
+                    + Borrow Book
+                </button>
+            </div>
+
+            <div class="toolbar">
+                <input
+                    type="text"
+                    id="borrowingSearch"
+                    placeholder="🔍 Search borrowing records..."
+                    oninput="filterBorrowings()"
+                >
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Book</th>
+                            <th>Member</th>
+                            <th>Borrow Date</th>
+                            <th>Return Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="borrowingsTableBody"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+
+        <div class="modal-content">
+
+            <button class="close-button" onclick="closeModal()">
+                &times;
+            </button>
+
+            <div id="modalContent"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
