@@ -94,6 +94,38 @@ input {
 .auth-button:hover {
     background: #4338ca;
 }
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 90px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    color: #4f46e5;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+.auth-link {
+    display: block;
+    margin: 15px auto 0;
+}
+
+.form-description {
+    color: #6b7280;
+    margin: -8px 0 20px;
+    line-height: 1.5;
+}
 
 .switch-auth {
     margin-top: 20px;
@@ -533,4 +565,9 @@ tr:hover {
     .auth-card {
         padding: 25px;
     }
+}
+
+.reset-link {
+    color: #4f46e5;
+    font-weight: bold;
 }

@@ -14,6 +14,13 @@ let userBorrowings = [];
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    const resetToken = new URLSearchParams(window.location.search).get("resetToken");
+
+    if (resetToken) {
+        showResetPassword(resetToken);
+        return;
+    }
+
     if (token) {
         loadCurrentUser();
     } else {
@@ -28,11 +35,126 @@ document.addEventListener("DOMContentLoaded", () => {
 function showLogin() {
     document.getElementById("loginForm").classList.remove("hidden");
     document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
 }
 
 function showRegister() {
     document.getElementById("loginForm").classList.add("hidden");
     document.getElementById("registerForm").classList.remove("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
+}
+
+function showForgotPassword() {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.remove("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
+}
+
+function showResetPassword(resetToken) {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.remove("hidden");
+    document.getElementById("resetPasswordForm").dataset.token = resetToken;
+}
+
+async function requestPasswordReset() {
+    const email = document.getElementById("forgotPasswordEmail").value.trim();
+
+    if (!email) {
+        showMessage("forgotPasswordMessage", "Please enter your email.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "forgotPasswordMessage",
+                data.error || "Unable to generate reset link."
+            );
+            return;
+        }
+
+        showMessage("forgotPasswordMessage", data.message);
+    } catch (error) {
+        showMessage("forgotPasswordMessage", "Unable to connect to server.");
+    }
+}
+
+function togglePasswordVisibility(inputId, toggleId) {
+    const input = document.getElementById(inputId);
+    const toggle = document.getElementById(toggleId);
+
+    if (input.type === "password") {
+        input.type = "text";
+        toggle.textContent = "Hide";
+    } else {
+        input.type = "password";
+        toggle.textContent = "Show";
+    }
+}
+
+async function resetPassword() {
+    const form = document.getElementById("resetPasswordForm");
+    const newPassword = document.getElementById("resetPassword").value;
+    const confirmPassword = document.getElementById("resetPasswordConfirm").value;
+
+    if (!newPassword || !confirmPassword) {
+        showMessage("resetPasswordMessage", "Please fill in both password fields.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showMessage("resetPasswordMessage", "Passwords do not match.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                token: form.dataset.token,
+                newPassword
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "resetPasswordMessage",
+                data.error || "Unable to reset password."
+            );
+            return;
+        }
+
+        showMessage("resetPasswordMessage", data.message);
+        document.getElementById("resetPassword").value = "";
+        document.getElementById("resetPasswordConfirm").value = "";
+
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showLogin();
+        }, 1200);
+    } catch (error) {
+        showMessage("resetPasswordMessage", "Unable to connect to server.");
+    }
 }
 
 // =====================================================

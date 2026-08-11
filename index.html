@@ -43,17 +43,34 @@
                     placeholder="Email"
                 >
 
-                <input
-                    type="password"
-                    id="loginPassword"
-                    placeholder="Password"
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="loginPasswordToggle"
+                        onclick="togglePasswordVisibility('loginPassword','loginPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
 
                 <button
                     class="auth-button"
                     onclick="loginUser()"
                 >
                     Login
+                </button>
+
+                <button
+                    onclick="showForgotPassword()"
+                    class="link-button auth-link"
+                >
+                    Forgot password?
                 </button>
 
                 <p
@@ -68,6 +85,115 @@
                         class="link-button"
                     >
                         Register
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- FORGOT PASSWORD -->
+
+            <div
+                id="forgotPasswordForm"
+                class="hidden"
+            >
+
+                <h2>Forgot Password</h2>
+
+                <p class="form-description">
+                    Enter your email to generate a password reset link.
+                </p>
+
+                <input
+                    type="email"
+                    id="forgotPasswordEmail"
+                    placeholder="Email"
+                >
+
+                <button
+                    class="auth-button"
+                    onclick="requestPasswordReset()"
+                >
+                    Send Reset Link
+                </button>
+
+                <p
+                    id="forgotPasswordMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    Remember your password?
+                    <button
+                        onclick="showLogin()"
+                        class="link-button"
+                    >
+                        Login
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- RESET PASSWORD -->
+
+            <div
+                id="resetPasswordForm"
+                class="hidden"
+            >
+
+                <h2>Reset Password</h2>
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="resetPassword"
+                        placeholder="New password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="resetPasswordToggle"
+                        onclick="togglePasswordVisibility('resetPassword','resetPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="resetPasswordConfirm"
+                        placeholder="Confirm new password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="resetPasswordConfirmToggle"
+                        onclick="togglePasswordVisibility('resetPasswordConfirm','resetPasswordConfirmToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <button
+                    class="auth-button"
+                    onclick="resetPassword()"
+                >
+                    Update Password
+                </button>
+
+                <p
+                    id="resetPasswordMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    <button
+                        onclick="showLogin()"
+                        class="link-button"
+                    >
+                        Back to Login
                     </button>
                 </p>
 
@@ -95,11 +221,21 @@
                     placeholder="Email"
                 >
 
-                <input
-                    type="password"
-                    id="registerPassword"
-                    placeholder="Password"
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        placeholder="Password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="registerPasswordToggle"
+                        onclick="togglePasswordVisibility('registerPassword','registerPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
 
                 <button
                     class="auth-button"
