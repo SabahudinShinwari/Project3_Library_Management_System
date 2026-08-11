@@ -3,6 +3,11 @@ const express = require("express");
 const router = express.Router();
 
 const {
+    authenticateToken,
+    requireAdmin
+} = require("../middleware/authMiddleware");
+
+const {
     getBooks,
     getBook,
     createBook,
@@ -11,18 +16,23 @@ const {
 } = require("../controllers/bookController");
 
 // GET all books
-router.get("/", getBooks);
+// Admin only
+router.get("/", authenticateToken, requireAdmin, getBooks);
 
 // GET one book
-router.get("/:id", getBook);
+// Admin only
+router.get("/:id", authenticateToken, requireAdmin, getBook);
 
 // CREATE book
-router.post("/", createBook);
+// Admin only
+router.post("/", authenticateToken, requireAdmin, createBook);
 
 // UPDATE book
-router.put("/:id", updateBook);
+// Admin only
+router.put("/:id", authenticateToken, requireAdmin, updateBook);
 
 // DELETE book
-router.delete("/:id", deleteBook);
+// Admin only
+router.delete("/:id", authenticateToken, requireAdmin, deleteBook);
 
 module.exports = router;

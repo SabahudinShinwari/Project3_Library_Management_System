@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
 require("./config/db");
 
+const userRoutes = require("./routes/userRoutes");
 const bookRoutes = require("./routes/bookRoutes");
 const memberRoutes = require("./routes/memberRoutes");
 const borrowingRoutes = require("./routes/borrowingRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 const PORT = 3000;
@@ -22,6 +25,9 @@ app.get("/", (req, res) => {
 });
 
 // API routes
+
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/borrowings", borrowingRoutes);

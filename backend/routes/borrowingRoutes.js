@@ -3,6 +3,11 @@ const express = require("express");
 const router = express.Router();
 
 const {
+    authenticateToken,
+    requireAdmin
+} = require("../middleware/authMiddleware");
+
+const {
     getBorrowings,
     getBorrowing,
     borrowBook,
@@ -10,15 +15,19 @@ const {
 } = require("../controllers/borrowingController");
 
 // GET all borrowing records
-router.get("/", getBorrowings);
+// Admin only
+router.get("/", authenticateToken, requireAdmin, getBorrowings);
 
 // GET one borrowing record
-router.get("/:id", getBorrowing);
+// Admin only
+router.get("/:id", authenticateToken, requireAdmin, getBorrowing);
 
 // BORROW a book
-router.post("/", borrowBook);
+// Admin only
+router.post("/", authenticateToken, requireAdmin, borrowBook);
 
 // RETURN a book
-router.put("/:id/return", returnBook);
+// Admin only
+router.put("/:id/return", authenticateToken, requireAdmin, returnBook);
 
 module.exports = router;

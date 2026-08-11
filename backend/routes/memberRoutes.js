@@ -3,6 +3,11 @@ const express = require("express");
 const router = express.Router();
 
 const {
+    authenticateToken,
+    requireAdmin
+} = require("../middleware/authMiddleware");
+
+const {
     getMembers,
     getMember,
     createMember,
@@ -11,18 +16,23 @@ const {
 } = require("../controllers/memberController");
 
 // GET all members
-router.get("/", getMembers);
+// Admin only
+router.get("/", authenticateToken, requireAdmin, getMembers);
 
 // GET one member
-router.get("/:id", getMember);
+// Admin only
+router.get("/:id", authenticateToken, requireAdmin, getMember);
 
 // CREATE member
-router.post("/", createMember);
+// Admin only
+router.post("/", authenticateToken, requireAdmin, createMember);
 
 // UPDATE member
-router.put("/:id", updateMember);
+// Admin only
+router.put("/:id", authenticateToken, requireAdmin, updateMember);
 
 // DELETE member
-router.delete("/:id", deleteMember);
+// Admin only
+router.delete("/:id", authenticateToken, requireAdmin, deleteMember);
 
 module.exports = router;

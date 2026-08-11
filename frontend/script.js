@@ -1,923 +1,1706 @@
-const API = "http://localhost:3000/api";
+const API_URL = "http://localhost:3000";
+
+let token = localStorage.getItem("token");
+let currentUser = null;
 
 let books = [];
 let members = [];
 let borrowings = [];
+let userBooks = [];
+let userBorrowings = [];
 
-
-// =========================
-// INITIAL LOAD
-// =========================
+// =====================================================
+// INITIALIZATION
+// =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadAllData();
+    const resetToken = new URLSearchParams(window.location.search).get("resetToken");
+
+    if (resetToken) {
+        showResetPassword(resetToken);
+        return;
+    }
+
+    if (token) {
+        loadCurrentUser();
+    } else {
+        showLogin();
+    }
 });
 
-async function loadAllData() {
-    await Promise.all([
-        loadBooks(),
-        loadMembers(),
-        loadBorrowings()
-    ]);
+// =====================================================
+// AUTHENTICATION
+// =====================================================
 
-    updateDashboard();
+function showLogin() {
+    document.getElementById("loginForm").classList.remove("hidden");
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
 }
 
+function showRegister() {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.remove("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
+}
 
-// =========================
-// BOOKS
-// =========================
+function showForgotPassword() {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.remove("hidden");
+    document.getElementById("resetPasswordForm").classList.add("hidden");
+}
+
+function showResetPassword(resetToken) {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("forgotPasswordForm").classList.add("hidden");
+    document.getElementById("resetPasswordForm").classList.remove("hidden");
+    document.getElementById("resetPasswordForm").dataset.token = resetToken;
+}
+
+async function requestPasswordReset() {
+    const email = document.getElementById("forgotPasswordEmail").value.trim();
+
+    if (!email) {
+        showMessage("forgotPasswordMessage", "Please enter your email.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "forgotPasswordMessage",
+                data.error || "Unable to generate reset link."
+            );
+            return;
+        }
+
+        showMessage("forgotPasswordMessage", data.message);
+    } catch (error) {
+        showMessage("forgotPasswordMessage", "Unable to connect to server.");
+    }
+}
+
+function togglePasswordVisibility(inputId, toggleId) {
+    const input = document.getElementById(inputId);
+    const toggle = document.getElementById(toggleId);
+
+    if (input.type === "password") {
+        input.type = "text";
+        toggle.textContent = "Hide";
+    } else {
+        input.type = "password";
+        toggle.textContent = "Show";
+    }
+}
+
+async function resetPassword() {
+    const form = document.getElementById("resetPasswordForm");
+    const newPassword = document.getElementById("resetPassword").value;
+    const confirmPassword = document.getElementById("resetPasswordConfirm").value;
+
+    if (!newPassword || !confirmPassword) {
+        showMessage("resetPasswordMessage", "Please fill in both password fields.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showMessage("resetPasswordMessage", "Passwords do not match.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                token: form.dataset.token,
+                newPassword
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "resetPasswordMessage",
+                data.error || "Unable to reset password."
+            );
+            return;
+        }
+
+        showMessage("resetPasswordMessage", data.message);
+        document.getElementById("resetPassword").value = "";
+        document.getElementById("resetPasswordConfirm").value = "";
+
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showLogin();
+        }, 1200);
+    } catch (error) {
+        showMessage("resetPasswordMessage", "Unable to connect to server.");
+    }
+}
+
+// =====================================================
+// REGISTER
+// =====================================================
+
+async function registerUser() {
+    const name = document.getElementById("registerName").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+
+    if (!name || !email || !password) {
+        showMessage("registerMessage", "Please fill in all fields.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "registerMessage",
+                data.error || "Registration failed."
+            );
+            return;
+        }
+
+        showMessage(
+            "registerMessage",
+            "Registration successful. You can now login."
+        );
+
+        document.getElementById("registerName").value = "";
+        document.getElementById("registerEmail").value = "";
+        document.getElementById("registerPassword").value = "";
+
+        setTimeout(() => {
+            showLogin();
+        }, 1200);
+
+    } catch (error) {
+        showMessage(
+            "registerMessage",
+            "Unable to connect to server."
+        );
+    }
+}
+
+// =====================================================
+// LOGIN
+// =====================================================
+
+async function loginUser() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+        showMessage(
+            "loginMessage",
+            "Please enter email and password."
+        );
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "loginMessage",
+                data.error || "Login failed."
+            );
+            return;
+        }
+
+        token = data.token;
+        currentUser = data.user;
+
+        localStorage.setItem("token", token);
+
+        document.getElementById("loginEmail").value = "";
+        document.getElementById("loginPassword").value = "";
+
+        openDashboard();
+
+    } catch (error) {
+        showMessage(
+            "loginMessage",
+            "Unable to connect to server."
+        );
+    }
+}
+
+// =====================================================
+// LOAD CURRENT USER
+// =====================================================
+
+async function loadCurrentUser() {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/user/profile`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            logout();
+            return;
+        }
+
+        currentUser = await response.json();
+
+        openDashboard();
+
+    } catch (error) {
+        logout();
+    }
+}
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+function logout() {
+    localStorage.removeItem("token");
+
+    token = null;
+    currentUser = null;
+
+    document
+        .getElementById("authSection")
+        .classList.remove("hidden");
+
+    document
+        .getElementById("adminSection")
+        .classList.add("hidden");
+
+    document
+        .getElementById("userSection")
+        .classList.add("hidden");
+
+    showLogin();
+}
+
+// =====================================================
+// OPEN DASHBOARD
+// =====================================================
+
+function openDashboard() {
+    document
+        .getElementById("authSection")
+        .classList.add("hidden");
+
+    if (currentUser && currentUser.role === "admin") {
+
+        document
+            .getElementById("adminSection")
+            .classList.remove("hidden");
+
+        document
+            .getElementById("userSection")
+            .classList.add("hidden");
+
+        loadAdminDashboard();
+
+    } else {
+
+        document
+            .getElementById("userSection")
+            .classList.remove("hidden");
+
+        document
+            .getElementById("adminSection")
+            .classList.add("hidden");
+
+        loadUserDashboard();
+    }
+}
+
+// =====================================================
+// API HELPER
+// =====================================================
+
+async function apiRequest(endpoint, method = "GET", body = null) {
+    const options = {
+        method,
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+
+    if (token) {
+        options.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(
+        `${API_URL}${endpoint}`,
+        options
+    );
+
+    const data = await response
+        .json()
+        .catch(() => ({}));
+
+    if (response.status === 401) {
+        logout();
+
+        throw new Error(
+            "Your session has expired. Please login again."
+        );
+    }
+
+    if (response.status === 403) {
+        throw new Error(
+            data.error ||
+            "You do not have permission to perform this action."
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            data.error ||
+            "Request failed."
+        );
+    }
+
+    return data;
+}
+
+// =====================================================
+// ADMIN DASHBOARD
+// =====================================================
+
+async function loadAdminDashboard() {
+    await loadBooks();
+    await loadMembers();
+    await loadBorrowings();
+
+    updateStatistics();
+}
+
+function updateStatistics() {
+    document.getElementById("totalBooks").textContent =
+        books.length;
+
+    const available = books.reduce(
+        (sum, book) =>
+            sum + Number(book.available_quantity || 0),
+        0
+    );
+
+    document.getElementById("availableBooks").textContent =
+        available;
+
+    document.getElementById("totalMembers").textContent =
+        members.length;
+
+    const active = borrowings.filter(
+        borrowing =>
+            borrowing.status === "Borrowed"
+    ).length;
+
+    document.getElementById("activeBorrowings").textContent =
+        active;
+}
+
+// =====================================================
+// ADMIN BOOKS
+// =====================================================
 
 async function loadBooks() {
     try {
-        const response = await fetch(`${API}/books`);
+        books = await apiRequest("/api/books");
 
-        if (!response.ok) {
-            throw new Error("Failed to load books");
-        }
-
-        books = await response.json();
-
-        renderBooks(books);
-        updateDashboard();
+        displayBooks(books);
 
     } catch (error) {
         showToast(error.message);
     }
 }
 
-function renderBooks(data) {
-    const table = document.getElementById("booksTableBody");
+function displayBooks(data) {
+    const tbody =
+        document.getElementById("booksTableBody");
 
-    if (data.length === 0) {
-        table.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align:center;">
-                    No books found
-                </td>
-            </tr>
-        `;
-        return;
-    }
+    tbody.innerHTML = "";
 
-    table.innerHTML = data.map(book => `
-        <tr>
+    data.forEach(book => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
             <td>${book.id}</td>
-            <td>${escapeHTML(book.title)}</td>
-            <td>${escapeHTML(book.author)}</td>
-            <td>${escapeHTML(book.category)}</td>
-            <td>${book.quantity}</td>
-            <td>${book.available_quantity}</td>
+
+            <td>
+                ${escapeHTML(book.title)}
+            </td>
+
+            <td>
+                ${escapeHTML(book.author)}
+            </td>
+
+            <td>
+                ${escapeHTML(book.category)}
+            </td>
+
+            <td>
+                ${book.quantity}
+            </td>
+
+            <td>
+                ${book.available_quantity}
+            </td>
 
             <td>
                 <button
-                    class="edit-button"
-                    onclick="editBook(${book.id})">
+                    class="action-button edit-button"
+                    onclick="openBookForm(${book.id})"
+                >
                     Edit
                 </button>
 
                 <button
-                    class="danger-button"
-                    onclick="deleteBook(${book.id})">
+                    class="action-button delete-button"
+                    onclick="deleteBook(${book.id})"
+                >
                     Delete
                 </button>
             </td>
-        </tr>
-    `).join("");
+        `;
+
+        tbody.appendChild(row);
+    });
 }
 
-function openBookForm(book = null) {
+function filterBooks() {
+    const search =
+        document
+            .getElementById("bookSearch")
+            .value
+            .toLowerCase();
 
-    const isEdit = book !== null;
+    const filtered = books.filter(book =>
+        String(book.title)
+            .toLowerCase()
+            .includes(search) ||
 
-    document.getElementById("modalContent").innerHTML = `
-        <h2>${isEdit ? "Edit Book" : "Add New Book"}</h2>
+        String(book.author)
+            .toLowerCase()
+            .includes(search) ||
 
-        <form onsubmit="saveBook(event, ${isEdit ? book.id : "null"})">
+        String(book.category)
+            .toLowerCase()
+            .includes(search)
+    );
 
-            <div class="form-group">
-                <label>Title</label>
-                <input
-                    type="text"
-                    id="bookTitle"
-                    value="${isEdit ? escapeHTML(book.title) : ""}"
-                    required>
-            </div>
+    displayBooks(filtered);
+}
 
-            <div class="form-group">
-                <label>Author</label>
-                <input
-                    type="text"
-                    id="bookAuthor"
-                    value="${isEdit ? escapeHTML(book.author) : ""}"
-                    required>
-            </div>
+// =====================================================
+// BOOK FORM
+// =====================================================
 
-            <div class="form-group">
-                <label>Category</label>
-                <input
-                    type="text"
-                    id="bookCategory"
-                    value="${isEdit ? escapeHTML(book.category) : ""}"
-                    required>
-            </div>
+function openBookForm(id = null) {
+    let book = null;
 
-            <div class="form-group">
-                <label>Quantity</label>
-                <input
-                    type="number"
-                    id="bookQuantity"
-                    min="0"
-                    value="${isEdit ? book.quantity : 1}"
-                    required>
-            </div>
+    if (id) {
+        book = books.find(
+            item => item.id === id
+        );
+    }
 
-            <button class="form-submit" type="submit">
-                ${isEdit ? "Update Book" : "Add Book"}
+    document
+        .getElementById("modalContent")
+        .innerHTML = `
+            <h2>
+                ${book ? "Edit Book" : "Add Book"}
+            </h2>
+
+            <input
+                id="bookTitle"
+                placeholder="Book Title"
+                value="${
+                    book
+                        ? escapeAttribute(book.title)
+                        : ""
+                }"
+            >
+
+            <input
+                id="bookAuthor"
+                placeholder="Author"
+                value="${
+                    book
+                        ? escapeAttribute(book.author)
+                        : ""
+                }"
+            >
+
+            <input
+                id="bookCategory"
+                placeholder="Category"
+                value="${
+                    book
+                        ? escapeAttribute(book.category)
+                        : ""
+                }"
+            >
+
+            <input
+                id="bookQuantity"
+                type="number"
+                min="1"
+                placeholder="Quantity"
+                value="${
+                    book
+                        ? book.quantity
+                        : ""
+                }"
+            >
+
+            <button
+                class="modal-submit"
+                onclick="saveBook(${id || "null"})"
+            >
+                Save Book
             </button>
+        `;
 
-        </form>
-    `;
-
-    openModal();
+    document
+        .getElementById("modal")
+        .classList.remove("hidden");
 }
 
-function editBook(id) {
+// =====================================================
+// SAVE BOOK
+// =====================================================
 
-    const book = books.find(book => book.id === id);
+async function saveBook(id) {
+    const title =
+        document
+            .getElementById("bookTitle")
+            .value
+            .trim();
 
-    if (!book) {
-        showToast("Book not found");
+    const author =
+        document
+            .getElementById("bookAuthor")
+            .value
+            .trim();
+
+    const category =
+        document
+            .getElementById("bookCategory")
+            .value
+            .trim();
+
+    const quantity =
+        Number(
+            document
+                .getElementById("bookQuantity")
+                .value
+        );
+
+    if (!title || !author || !category || quantity <= 0) {
+        showToast(
+            "Please fill all book fields."
+        );
         return;
     }
 
-    openBookForm(book);
-}
-
-async function saveBook(event, id) {
-
-    event.preventDefault();
-
-    const bookData = {
-        title: document.getElementById("bookTitle").value.trim(),
-        author: document.getElementById("bookAuthor").value.trim(),
-        category: document.getElementById("bookCategory").value.trim(),
-        quantity: Number(document.getElementById("bookQuantity").value)
-    };
-
     try {
+        if (id) {
 
-        const url = id
-            ? `${API}/books/${id}`
-            : `${API}/books`;
+            await apiRequest(
+                `/api/books/${id}`,
+                "PUT",
+                {
+                    title,
+                    author,
+                    category,
+                    quantity
+                }
+            );
 
-        const method = id ? "PUT" : "POST";
+            showToast(
+                "Book updated successfully."
+            );
 
-        const response = await fetch(url, {
-            method,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(bookData)
-        });
+        } else {
 
-        const data = await response.json();
+            await apiRequest(
+                "/api/books",
+                "POST",
+                {
+                    title,
+                    author,
+                    category,
+                    quantity
+                }
+            );
 
-        if (!response.ok) {
-            throw new Error(data.error || "Operation failed");
+            showToast(
+                "Book added successfully."
+            );
         }
-
-        showToast(data.message);
 
         closeModal();
 
         await loadBooks();
 
+        updateStatistics();
+
     } catch (error) {
         showToast(error.message);
     }
 }
+
+// =====================================================
+// DELETE BOOK
+// =====================================================
 
 async function deleteBook(id) {
-
-    const confirmed = confirm(
-        "Are you sure you want to delete this book?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-
-        const response = await fetch(
-            `${API}/books/${id}`,
-            {
-                method: "DELETE"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Failed to delete book");
-        }
-
-        showToast(data.message);
-
-        await loadBooks();
-
-    } catch (error) {
-        showToast(error.message);
-    }
-}
-
-
-// =========================
-// MEMBERS
-// =========================
-
-async function loadMembers() {
-
-    try {
-
-        const response = await fetch(`${API}/members`);
-
-        if (!response.ok) {
-            throw new Error("Failed to load members");
-        }
-
-        members = await response.json();
-
-        renderMembers(members);
-
-        updateDashboard();
-
-    } catch (error) {
-        showToast(error.message);
-    }
-}
-
-function renderMembers(data) {
-
-    const table = document.getElementById("membersTableBody");
-
-    if (data.length === 0) {
-
-        table.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align:center;">
-                    No members found
-                </td>
-            </tr>
-        `;
-
+    if (
+        !confirm(
+            "Are you sure you want to delete this book?"
+        )
+    ) {
         return;
     }
 
-    table.innerHTML = data.map(member => `
-        <tr>
+    try {
+        await apiRequest(
+            `/api/books/${id}`,
+            "DELETE"
+        );
 
-            <td>${member.id}</td>
+        showToast(
+            "Book deleted successfully."
+        );
 
-            <td>${escapeHTML(member.name)}</td>
+        await loadBooks();
 
-            <td>${escapeHTML(member.email)}</td>
+        updateStatistics();
 
-            <td>${escapeHTML(member.phone || "-")}</td>
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// =====================================================
+// ADMIN MEMBERS
+// =====================================================
+
+async function loadMembers() {
+    try {
+        members =
+            await apiRequest(
+                "/api/members"
+            );
+
+        displayMembers(members);
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function displayMembers(data) {
+    const tbody =
+        document.getElementById(
+            "membersTableBody"
+        );
+
+    tbody.innerHTML = "";
+
+    data.forEach(member => {
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+            <td>
+                ${member.id}
+            </td>
 
             <td>
+                ${escapeHTML(member.name)}
+            </td>
 
+            <td>
+                ${escapeHTML(member.email)}
+            </td>
+
+            <td>
+                ${escapeHTML(
+                    member.phone || ""
+                )}
+            </td>
+
+            <td>
                 <button
-                    class="edit-button"
-                    onclick="editMember(${member.id})">
+                    class="action-button edit-button"
+                    onclick="openMemberForm(${member.id})"
+                >
                     Edit
                 </button>
 
                 <button
-                    class="danger-button"
-                    onclick="deleteMember(${member.id})">
+                    class="action-button delete-button"
+                    onclick="deleteMember(${member.id})"
+                >
                     Delete
                 </button>
-
             </td>
+        `;
 
-        </tr>
-    `).join("");
+        tbody.appendChild(row);
+    });
 }
 
-function openMemberForm(member = null) {
+function filterMembers() {
+    const search =
+        document
+            .getElementById("memberSearch")
+            .value
+            .toLowerCase();
 
-    const isEdit = member !== null;
+    const filtered =
+        members.filter(member =>
+            String(member.name)
+                .toLowerCase()
+                .includes(search) ||
 
-    document.getElementById("modalContent").innerHTML = `
+            String(member.email)
+                .toLowerCase()
+                .includes(search) ||
 
-        <h2>${isEdit ? "Edit Member" : "Add New Member"}</h2>
+            String(member.phone || "")
+                .toLowerCase()
+                .includes(search)
+        );
 
-        <form onsubmit="saveMember(event, ${isEdit ? member.id : "null"})">
+    displayMembers(filtered);
+}
 
-            <div class="form-group">
+// =====================================================
+// MEMBER FORM
+// =====================================================
 
-                <label>Name</label>
+function openMemberForm(id = null) {
+    let member = null;
 
-                <input
-                    type="text"
-                    id="memberName"
-                    value="${isEdit ? escapeHTML(member.name) : ""}"
-                    required>
+    if (id) {
+        member =
+            members.find(
+                item => item.id === id
+            );
+    }
 
-            </div>
+    document
+        .getElementById("modalContent")
+        .innerHTML = `
+            <h2>
+                ${member ? "Edit Member" : "Add Member"}
+            </h2>
 
-            <div class="form-group">
+            <input
+                id="memberName"
+                placeholder="Member Name"
+                value="${
+                    member
+                        ? escapeAttribute(member.name)
+                        : ""
+                }"
+            >
 
-                <label>Email</label>
+            <input
+                id="memberEmail"
+                type="email"
+                placeholder="Email"
+                value="${
+                    member
+                        ? escapeAttribute(member.email)
+                        : ""
+                }"
+            >
 
-                <input
-                    type="email"
-                    id="memberEmail"
-                    value="${isEdit ? escapeHTML(member.email) : ""}"
-                    required>
+            <input
+                id="memberPhone"
+                placeholder="Phone"
+                value="${
+                    member
+                        ? escapeAttribute(
+                            member.phone || ""
+                        )
+                        : ""
+                }"
+            >
 
-            </div>
-
-            <div class="form-group">
-
-                <label>Phone</label>
-
-                <input
-                    type="text"
-                    id="memberPhone"
-                    value="${isEdit ? escapeHTML(member.phone || "") : ""}">
-
-            </div>
-
-            <button class="form-submit" type="submit">
-                ${isEdit ? "Update Member" : "Add Member"}
+            <button
+                class="modal-submit"
+                onclick="saveMember(${id || "null"})"
+            >
+                Save Member
             </button>
+        `;
 
-        </form>
-    `;
-
-    openModal();
+    document
+        .getElementById("modal")
+        .classList.remove("hidden");
 }
 
-function editMember(id) {
+// =====================================================
+// SAVE MEMBER
+// =====================================================
 
-    const member = members.find(
-        member => member.id === id
-    );
+async function saveMember(id) {
+    const name =
+        document
+            .getElementById("memberName")
+            .value
+            .trim();
 
-    if (!member) {
-        showToast("Member not found");
+    const email =
+        document
+            .getElementById("memberEmail")
+            .value
+            .trim();
+
+    const phone =
+        document
+            .getElementById("memberPhone")
+            .value
+            .trim();
+
+    if (!name || !email) {
+        showToast(
+            "Name and email are required."
+        );
         return;
     }
 
-    openMemberForm(member);
-}
-
-async function saveMember(event, id) {
-
-    event.preventDefault();
-
-    const memberData = {
-
-        name: document
-            .getElementById("memberName")
-            .value
-            .trim(),
-
-        email: document
-            .getElementById("memberEmail")
-            .value
-            .trim(),
-
-        phone: document
-            .getElementById("memberPhone")
-            .value
-            .trim()
-
-    };
-
     try {
+        if (id) {
 
-        const url = id
-            ? `${API}/members/${id}`
-            : `${API}/members`;
+            await apiRequest(
+                `/api/members/${id}`,
+                "PUT",
+                {
+                    name,
+                    email,
+                    phone
+                }
+            );
 
-        const method = id ? "PUT" : "POST";
+            showToast(
+                "Member updated successfully."
+            );
 
-        const response = await fetch(url, {
+        } else {
 
-            method,
+            await apiRequest(
+                "/api/members",
+                "POST",
+                {
+                    name,
+                    email,
+                    phone
+                }
+            );
 
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(memberData)
-
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Operation failed"
+            showToast(
+                "Member added successfully."
             );
         }
-
-        showToast(data.message);
 
         closeModal();
 
         await loadMembers();
 
+        updateStatistics();
+
     } catch (error) {
-
         showToast(error.message);
-
     }
 }
 
+// =====================================================
+// DELETE MEMBER
+// =====================================================
+
 async function deleteMember(id) {
-
-    const confirmed = confirm(
-        "Are you sure you want to delete this member?"
-    );
-
-    if (!confirmed) return;
+    if (
+        !confirm(
+            "Are you sure you want to delete this member?"
+        )
+    ) {
+        return;
+    }
 
     try {
-
-        const response = await fetch(
-            `${API}/members/${id}`,
-            {
-                method: "DELETE"
-            }
+        await apiRequest(
+            `/api/members/${id}`,
+            "DELETE"
         );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Failed to delete member"
-            );
-        }
-
-        showToast(data.message);
+        showToast(
+            "Member deleted successfully."
+        );
 
         await loadMembers();
 
+        updateStatistics();
+
     } catch (error) {
-
         showToast(error.message);
-
     }
 }
 
-
-// =========================
-// BORROWINGS
-// =========================
+// =====================================================
+// ADMIN BORROWINGS
+// =====================================================
 
 async function loadBorrowings() {
-
     try {
-
-        const response = await fetch(
-            `${API}/borrowings`
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                "Failed to load borrowing records"
+        borrowings =
+            await apiRequest(
+                "/api/borrowings"
             );
-        }
 
-        borrowings = await response.json();
-
-        renderBorrowings(borrowings);
-
-        updateDashboard();
+        displayBorrowings(borrowings);
 
     } catch (error) {
-
         showToast(error.message);
-
     }
 }
 
-function renderBorrowings(data) {
-
-    const table =
+function displayBorrowings(data) {
+    const tbody =
         document.getElementById(
             "borrowingsTableBody"
         );
 
-    if (data.length === 0) {
+    tbody.innerHTML = "";
 
-        table.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align:center;">
-                    No borrowing records found
-                </td>
-            </tr>
+    data.forEach(record => {
+
+        /*
+         * A borrowing can belong to:
+         * 1. A logged-in USER
+         * 2. An ADMIN-created MEMBER
+         *
+         * Backend returns member_name for both.
+         * These fallbacks make the frontend safer.
+         */
+
+        const borrowerName =
+            record.member_name ||
+            record.user_name ||
+            record.member ||
+            record.name ||
+            "Unknown";
+
+        const borrowerEmail =
+            record.member_email ||
+            record.user_email ||
+            record.email ||
+            "";
+
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+            <td>
+                ${record.id}
+            </td>
+
+            <td>
+                ${escapeHTML(
+                    record.book_title ||
+                    record.title ||
+                    "Unknown"
+                )}
+            </td>
+
+            <td>
+                ${escapeHTML(
+                    borrowerName
+                )}
+                ${
+                    borrowerEmail
+                        ? `<br>
+                           <small>
+                               ${escapeHTML(
+                                   borrowerEmail
+                               )}
+                           </small>`
+                        : ""
+                }
+            </td>
+
+            <td>
+                ${formatDate(
+                    record.borrow_date
+                )}
+            </td>
+
+            <td>
+                ${formatDate(
+                    record.return_date
+                )}
+            </td>
+
+            <td>
+                ${escapeHTML(
+                    record.status || ""
+                )}
+            </td>
+
+            <td>
+                ${
+                    record.status === "Borrowed"
+                        ?
+                        `
+                        <button
+                            class="action-button return-button"
+                            onclick="returnBook(${record.id})"
+                        >
+                            Return
+                        </button>
+                        `
+                        :
+                        "-"
+                }
+            </td>
         `;
 
-        return;
-    }
-
-    table.innerHTML = data.map(record => {
-
-        const statusClass =
-            record.status === "Returned"
-                ? "status-returned"
-                : "status-borrowed";
-
-        const action =
-            record.status === "Borrowed"
-                ? `
-                    <button
-                        class="success-button"
-                        onclick="returnBook(${record.id})">
-                        Return
-                    </button>
-                `
-                : `
-                    <span style="color:#16a34a;">
-                        Completed
-                    </span>
-                `;
-
-        return `
-            <tr>
-
-                <td>${record.id}</td>
-
-                <td>${escapeHTML(record.book_title)}</td>
-
-                <td>${escapeHTML(record.member_name)}</td>
-
-                <td>${formatDate(record.borrow_date)}</td>
-
-                <td>${formatDate(record.return_date)}</td>
-
-                <td>
-                    <span class="${statusClass}">
-                        ${record.status}
-                    </span>
-                </td>
-
-                <td>
-                    ${action}
-                </td>
-
-            </tr>
-        `;
-
-    }).join("");
+        tbody.appendChild(row);
+    });
 }
+
+function filterBorrowings() {
+    const search =
+        document
+            .getElementById(
+                "borrowingSearch"
+            )
+            .value
+            .toLowerCase();
+
+    const filtered =
+        borrowings.filter(record => {
+
+            const borrowerName =
+                record.member_name ||
+                record.user_name ||
+                record.member ||
+                record.name ||
+                "";
+
+            const borrowerEmail =
+                record.member_email ||
+                record.user_email ||
+                record.email ||
+                "";
+
+            return (
+                String(
+                    record.book_title || ""
+                )
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                String(borrowerName)
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                String(borrowerEmail)
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                String(
+                    record.status || ""
+                )
+                    .toLowerCase()
+                    .includes(search)
+            );
+        });
+
+    displayBorrowings(filtered);
+}
+
+// =====================================================
+// BORROW FORM
+// =====================================================
 
 function openBorrowForm() {
+    let bookOptions = "";
 
-    if (books.length === 0) {
-        showToast("No books available");
-        return;
-    }
+    books.forEach(book => {
+        if (
+            Number(
+                book.available_quantity
+            ) > 0
+        ) {
+            bookOptions += `
+                <option value="${book.id}">
+                    ${escapeHTML(book.title)}
+                    (${book.available_quantity} available)
+                </option>
+            `;
+        }
+    });
 
-    if (members.length === 0) {
-        showToast("Please add a member first");
-        return;
-    }
+    let memberOptions = "";
 
-    const availableBooks =
-        books.filter(
-            book => book.available_quantity > 0
-        );
+    members.forEach(member => {
+        memberOptions += `
+            <option value="${member.id}">
+                ${escapeHTML(member.name)}
+            </option>
+        `;
+    });
 
-    if (availableBooks.length === 0) {
-        showToast(
-            "No books are currently available"
-        );
-        return;
-    }
+    document
+        .getElementById("modalContent")
+        .innerHTML = `
+            <h2>
+                Borrow Book
+            </h2>
 
-    document.getElementById("modalContent").innerHTML = `
+            <select id="borrowBookId">
+                <option value="">
+                    Select Book
+                </option>
 
-        <h2>Borrow a Book</h2>
+                ${bookOptions}
+            </select>
 
-        <form onsubmit="borrowBook(event)">
+            <select id="borrowMemberId">
+                <option value="">
+                    Select Member
+                </option>
 
-            <div class="form-group">
-
-                <label>Select Book</label>
-
-                <select id="borrowBook" required>
-
-                    <option value="">
-                        Choose a book
-                    </option>
-
-                    ${availableBooks.map(book => `
-                        <option value="${book.id}">
-                            ${escapeHTML(book.title)}
-                            (${book.available_quantity} available)
-                        </option>
-                    `).join("")}
-
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label>Select Member</label>
-
-                <select id="borrowMember" required>
-
-                    <option value="">
-                        Choose a member
-                    </option>
-
-                    ${members.map(member => `
-                        <option value="${member.id}">
-                            ${escapeHTML(member.name)}
-                            - ${escapeHTML(member.email)}
-                        </option>
-                    `).join("")}
-
-                </select>
-
-            </div>
+                ${memberOptions}
+            </select>
 
             <button
-                class="form-submit"
-                type="submit">
-
-                Confirm Borrow
-
+                class="modal-submit"
+                onclick="saveBorrowing()"
+            >
+                Borrow Book
             </button>
+        `;
 
-        </form>
-    `;
-
-    openModal();
+    document
+        .getElementById("modal")
+        .classList.remove("hidden");
 }
 
-async function borrowBook(event) {
+// =====================================================
+// SAVE BORROWING
+// =====================================================
 
-    event.preventDefault();
-
+async function saveBorrowing() {
     const book_id =
         Number(
-            document.getElementById(
-                "borrowBook"
-            ).value
+            document
+                .getElementById(
+                    "borrowBookId"
+                )
+                .value
         );
 
     const member_id =
         Number(
-            document.getElementById(
-                "borrowMember"
-            ).value
+            document
+                .getElementById(
+                    "borrowMemberId"
+                )
+                .value
         );
 
+    if (!book_id || !member_id) {
+        showToast(
+            "Please select a book and member."
+        );
+        return;
+    }
+
     try {
-
-        const response = await fetch(
-            `${API}/borrowings`,
+        await apiRequest(
+            "/api/borrowings",
+            "POST",
             {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    book_id,
-                    member_id
-                })
-
+                book_id,
+                member_id
             }
         );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Borrow operation failed"
-            );
-        }
-
-        showToast(data.message);
+        showToast(
+            "Book borrowed successfully."
+        );
 
         closeModal();
 
-        await loadAllData();
+        await loadBooks();
+        await loadBorrowings();
+
+        updateStatistics();
 
     } catch (error) {
-
         showToast(error.message);
-
     }
 }
 
+// =====================================================
+// RETURN BOOK - ADMIN
+// =====================================================
+
 async function returnBook(id) {
-
-    const confirmed = confirm(
-        "Are you sure you want to return this book?"
-    );
-
-    if (!confirmed) return;
-
     try {
+        await apiRequest(
+            `/api/borrowings/${id}/return`,
+            "PUT"
+        );
 
-        const response = await fetch(
-            `${API}/borrowings/${id}/return`,
+        showToast(
+            "Book returned successfully."
+        );
+
+        await loadBooks();
+        await loadBorrowings();
+
+        updateStatistics();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// =====================================================
+// USER DASHBOARD
+// =====================================================
+
+async function loadUserDashboard() {
+    try {
+        const profile =
+            await apiRequest(
+                "/api/user/profile"
+            );
+
+        currentUser = profile;
+
+        document
+            .getElementById("userName")
+            .textContent =
+            profile.name || "User";
+
+        document
+            .getElementById("profileName")
+            .textContent =
+            profile.name || "User";
+
+        document
+            .getElementById("profileEmail")
+            .textContent =
+            profile.email || "";
+
+        document
+            .getElementById("profileRole")
+            .textContent =
+            profile.role || "user";
+
+        await loadUserBooks();
+        await loadUserBorrowings();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// =====================================================
+// USER BOOKS
+// =====================================================
+
+async function loadUserBooks() {
+    try {
+        userBooks =
+            await apiRequest(
+                "/api/user/books"
+            );
+
+        displayUserBooks(
+            userBooks
+        );
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function displayUserBooks(data) {
+    const grid =
+        document.getElementById(
+            "userBooksGrid"
+        );
+
+    grid.innerHTML = "";
+
+    data.forEach(book => {
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "book-card";
+
+        card.innerHTML = `
+            <h3>
+                📖 ${escapeHTML(
+                    book.title
+                )}
+            </h3>
+
+            <p>
+                <strong>Author:</strong>
+                ${escapeHTML(
+                    book.author
+                )}
+            </p>
+
+            <p>
+                <strong>Category:</strong>
+                ${escapeHTML(
+                    book.category
+                )}
+            </p>
+
+            <p>
+                <strong>Available:</strong>
+                ${book.available_quantity}
+            </p>
+
+            <button
+                class="borrow-button"
+                onclick="borrowAsUser(${book.id})"
+                ${
+                    Number(
+                        book.available_quantity
+                    ) <= 0
+                        ? "disabled"
+                        : ""
+                }
+            >
+                Borrow Book
+            </button>
+        `;
+
+        grid.appendChild(card);
+    });
+}
+
+// =====================================================
+// FILTER USER BOOKS
+// =====================================================
+
+function filterUserBooks() {
+    const search =
+        document
+            .getElementById(
+                "userBookSearch"
+            )
+            .value
+            .toLowerCase();
+
+    const filtered =
+        userBooks.filter(book =>
+            String(book.title)
+                .toLowerCase()
+                .includes(search) ||
+
+            String(book.author)
+                .toLowerCase()
+                .includes(search) ||
+
+            String(book.category)
+                .toLowerCase()
+                .includes(search)
+        );
+
+    displayUserBooks(
+        filtered
+    );
+}
+
+// =====================================================
+// USER BORROW
+// =====================================================
+
+async function borrowAsUser(bookId) {
+    try {
+        await apiRequest(
+            "/api/user/borrow",
+            "POST",
             {
-                method: "PUT"
+                book_id: bookId
             }
         );
 
-        const data = await response.json();
+        showToast(
+            "Book borrowed successfully."
+        );
 
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Return operation failed"
-            );
-        }
-
-        showToast(data.message);
-
-        await loadAllData();
+        await loadUserBooks();
+        await loadUserBorrowings();
 
     } catch (error) {
-
         showToast(error.message);
-
     }
 }
 
+// =====================================================
+// USER BORROWINGS
+// =====================================================
 
-// =========================
-// DASHBOARD
-// =========================
+async function loadUserBorrowings() {
+    try {
+        userBorrowings =
+            await apiRequest(
+                "/api/user/borrowings"
+            );
 
-function updateDashboard() {
-
-    document.getElementById(
-        "totalBooks"
-    ).textContent = books.length;
-
-    document.getElementById(
-        "availableBooks"
-    ).textContent =
-        books.reduce(
-            (total, book) =>
-                total + Number(book.available_quantity),
-            0
+        displayUserBorrowings(
+            userBorrowings
         );
 
-    document.getElementById(
-        "totalMembers"
-    ).textContent = members.length;
-
-    document.getElementById(
-        "activeBorrowings"
-    ).textContent =
-        borrowings.filter(
-            record => record.status === "Borrowed"
-        ).length;
+    } catch (error) {
+        showToast(error.message);
+    }
 }
 
-
-// =========================
-// SEARCH
-// =========================
-
-function filterBooks() {
-
-    const query =
+function displayUserBorrowings(data) {
+    const tbody =
         document.getElementById(
-            "bookSearch"
-        ).value.toLowerCase();
+            "userBorrowingsTableBody"
+        );
 
-    const filtered = books.filter(book =>
+    tbody.innerHTML = "";
 
-        book.title.toLowerCase().includes(query) ||
+    data.forEach(record => {
+        const row =
+            document.createElement("tr");
 
-        book.author.toLowerCase().includes(query) ||
+        row.innerHTML = `
+            <td>
+                ${record.id}
+            </td>
 
-        book.category.toLowerCase().includes(query)
+            <td>
+                ${escapeHTML(
+                    record.book_title ||
+                    record.title ||
+                    "Unknown"
+                )}
+            </td>
 
-    );
+            <td>
+                ${escapeHTML(
+                    record.author ||
+                    "Unknown"
+                )}
+            </td>
 
-    renderBooks(filtered);
+            <td>
+                ${formatDate(
+                    record.borrow_date
+                )}
+            </td>
+
+            <td>
+                ${formatDate(
+                    record.return_date
+                )}
+            </td>
+
+            <td>
+                ${escapeHTML(
+                    record.status || ""
+                )}
+            </td>
+
+            <td>
+                ${
+                    record.status === "Borrowed"
+                        ?
+                        `
+                        <button
+                            class="action-button return-button"
+                            onclick="returnMyBook(${record.id})"
+                        >
+                            Return
+                        </button>
+                        `
+                        :
+                        "-"
+                }
+            </td>
+        `;
+
+        tbody.appendChild(row);
+    });
 }
 
-function filterMembers() {
+// =====================================================
+// USER RETURN
+// =====================================================
 
-    const query =
-        document.getElementById(
-            "memberSearch"
-        ).value.toLowerCase();
+async function returnMyBook(id) {
+    try {
+        await apiRequest(
+            `/api/user/borrowings/${id}/return`,
+            "PUT"
+        );
 
-    const filtered = members.filter(member =>
+        showToast(
+            "Book returned successfully."
+        );
 
-        member.name.toLowerCase().includes(query) ||
+        await loadUserBooks();
+        await loadUserBorrowings();
 
-        member.email.toLowerCase().includes(query) ||
-
-        (member.phone || "")
-            .toLowerCase()
-            .includes(query)
-
-    );
-
-    renderMembers(filtered);
+    } catch (error) {
+        showToast(error.message);
+    }
 }
 
-function filterBorrowings() {
-
-    const query =
-        document.getElementById(
-            "borrowingSearch"
-        ).value.toLowerCase();
-
-    const filtered = borrowings.filter(record =>
-
-        record.book_title
-            .toLowerCase()
-            .includes(query) ||
-
-        record.member_name
-            .toLowerCase()
-            .includes(query) ||
-
-        record.status
-            .toLowerCase()
-            .includes(query)
-
-    );
-
-    renderBorrowings(filtered);
-}
-
-
-// =========================
+// =====================================================
 // NAVIGATION
-// =========================
+// =====================================================
 
 function showSection(sectionId, button) {
+    const sections =
+        document.querySelectorAll(
+            "#adminSection .content-section"
+        );
 
-    document
-        .querySelectorAll(".content-section")
-        .forEach(section => {
-
-            section.classList.add("hidden");
-
-        });
+    sections.forEach(section => {
+        section.classList.add("hidden");
+    });
 
     document
         .getElementById(sectionId)
         .classList.remove("hidden");
 
-    document
-        .querySelectorAll(".tab-button")
-        .forEach(btn => {
+    const buttons =
+        document.querySelectorAll(
+            "#adminSection .tab-button"
+        );
 
-            btn.classList.remove("active");
-
-        });
+    buttons.forEach(btn => {
+        btn.classList.remove("active");
+    });
 
     button.classList.add("active");
 }
 
+function showUserSection(sectionId, button) {
+    const sections =
+        document.querySelectorAll(
+            "#userSection .content-section"
+        );
 
-// =========================
-// MODAL
-// =========================
-
-function openModal() {
+    sections.forEach(section => {
+        section.classList.add("hidden");
+    });
 
     document
-        .getElementById("modal")
+        .getElementById(sectionId)
         .classList.remove("hidden");
+
+    const buttons =
+        document.querySelectorAll(
+            "#userSection .tab-button"
+        );
+
+    buttons.forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    button.classList.add("active");
 }
 
-function closeModal() {
+// =====================================================
+// MODAL
+// =====================================================
 
+function closeModal() {
     document
         .getElementById("modal")
         .classList.add("hidden");
+
+    document
+        .getElementById("modalContent")
+        .innerHTML = "";
 }
 
-
-// =========================
-// TOAST
-// =========================
+// =====================================================
+// TOAST / MESSAGE
+// =====================================================
 
 function showToast(message) {
-
     const toast =
         document.getElementById("toast");
 
@@ -926,19 +1709,22 @@ function showToast(message) {
     toast.classList.add("show");
 
     setTimeout(() => {
-
         toast.classList.remove("show");
-
     }, 3000);
 }
 
+function showMessage(elementId, message) {
+    const element =
+        document.getElementById(elementId);
 
-// =========================
-// HELPERS
-// =========================
+    element.textContent = message;
+}
+
+// =====================================================
+// DATE FORMAT
+// =====================================================
 
 function formatDate(date) {
-
     if (!date) {
         return "-";
     }
@@ -947,9 +1733,15 @@ function formatDate(date) {
         .toLocaleDateString();
 }
 
-function escapeHTML(value) {
+// =====================================================
+// SECURITY HELPERS
+// =====================================================
 
-    if (value === null || value === undefined) {
+function escapeHTML(value) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return "";
     }
 
@@ -959,4 +1751,8 @@ function escapeHTML(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value) {
+    return escapeHTML(value);
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,209 +12,830 @@
 
 <body>
 
-    <header class="header">
-        <div>
-            <h1>📚 Library Management System</h1>
-            <p>Manage books, members, and borrowing records</p>
+    <!-- =====================================================
+         AUTHENTICATION
+         ===================================================== -->
+
+    <div id="authSection" class="auth-container">
+
+        <div class="auth-card">
+
+            <div class="auth-logo">
+                📚
+            </div>
+
+            <h1>Library Management System</h1>
+
+            <p class="auth-subtitle">
+                Login to access the library
+            </p>
+
+
+            <!-- LOGIN -->
+
+            <div id="loginForm">
+
+                <h2>Login</h2>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Email"
+                >
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="loginPasswordToggle"
+                        onclick="togglePasswordVisibility('loginPassword','loginPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <button
+                    class="auth-button"
+                    onclick="loginUser()"
+                >
+                    Login
+                </button>
+
+                <button
+                    onclick="showForgotPassword()"
+                    class="link-button auth-link"
+                >
+                    Forgot password?
+                </button>
+
+                <p
+                    id="loginMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    Don't have an account?
+                    <button
+                        onclick="showRegister()"
+                        class="link-button"
+                    >
+                        Register
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- FORGOT PASSWORD -->
+
+            <div
+                id="forgotPasswordForm"
+                class="hidden"
+            >
+
+                <h2>Forgot Password</h2>
+
+                <p class="form-description">
+                    Enter your email to generate a password reset link.
+                </p>
+
+                <input
+                    type="email"
+                    id="forgotPasswordEmail"
+                    placeholder="Email"
+                >
+
+                <button
+                    class="auth-button"
+                    onclick="requestPasswordReset()"
+                >
+                    Send Reset Link
+                </button>
+
+                <p
+                    id="forgotPasswordMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    Remember your password?
+                    <button
+                        onclick="showLogin()"
+                        class="link-button"
+                    >
+                        Login
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- RESET PASSWORD -->
+
+            <div
+                id="resetPasswordForm"
+                class="hidden"
+            >
+
+                <h2>Reset Password</h2>
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="resetPassword"
+                        placeholder="New password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="resetPasswordToggle"
+                        onclick="togglePasswordVisibility('resetPassword','resetPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="resetPasswordConfirm"
+                        placeholder="Confirm new password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="resetPasswordConfirmToggle"
+                        onclick="togglePasswordVisibility('resetPasswordConfirm','resetPasswordConfirmToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <button
+                    class="auth-button"
+                    onclick="resetPassword()"
+                >
+                    Update Password
+                </button>
+
+                <p
+                    id="resetPasswordMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    <button
+                        onclick="showLogin()"
+                        class="link-button"
+                    >
+                        Back to Login
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- REGISTER -->
+
+            <div
+                id="registerForm"
+                class="hidden"
+            >
+
+                <h2>Create Account</h2>
+
+                <input
+                    type="text"
+                    id="registerName"
+                    placeholder="Full Name"
+                >
+
+                <input
+                    type="email"
+                    id="registerEmail"
+                    placeholder="Email"
+                >
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        placeholder="Password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="registerPasswordToggle"
+                        onclick="togglePasswordVisibility('registerPassword','registerPasswordToggle')"
+                    >
+                        Show
+                    </button>
+                </div>
+
+                <button
+                    class="auth-button"
+                    onclick="registerUser()"
+                >
+                    Register
+                </button>
+
+                <p
+                    id="registerMessage"
+                    class="message"
+                ></p>
+
+                <p class="switch-auth">
+                    Already have an account?
+                    <button
+                        onclick="showLogin()"
+                        class="link-button"
+                    >
+                        Login
+                    </button>
+                </p>
+
+            </div>
+
         </div>
-    </header>
 
-    <main class="container">
+    </div>
 
-        <!-- Dashboard -->
-        <section class="dashboard">
 
-            <div class="stat-card">
-                <span class="stat-icon">📚</span>
-                <div>
-                    <h3 id="totalBooks">0</h3>
-                    <p>Total Books</p>
-                </div>
+    <!-- =====================================================
+         ADMIN DASHBOARD
+         ===================================================== -->
+
+    <div
+        id="adminSection"
+        class="hidden"
+    >
+
+        <header class="header">
+
+            <div>
+                <h1>📚 Library Management System</h1>
+
+                <p>
+                    Administrator Dashboard
+                </p>
             </div>
 
-            <div class="stat-card">
-                <span class="stat-icon">📖</span>
-                <div>
-                    <h3 id="availableBooks">0</h3>
-                    <p>Available Copies</p>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-icon">👥</span>
-                <div>
-                    <h3 id="totalMembers">0</h3>
-                    <p>Members</p>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-icon">🔖</span>
-                <div>
-                    <h3 id="activeBorrowings">0</h3>
-                    <p>Active Borrowings</p>
-                </div>
-            </div>
-
-        </section>
-
-
-        <!-- Navigation -->
-        <nav class="tabs">
-
-            <button class="tab-button active" onclick="showSection('booksSection', this)">
-                📚 Books
+            <button
+                class="logout-button"
+                onclick="logout()"
+            >
+                Logout
             </button>
 
-            <button class="tab-button" onclick="showSection('membersSection', this)">
-                👥 Members
+        </header>
+
+
+        <main class="container">
+
+            <!-- ADMIN STATISTICS -->
+
+            <section class="dashboard">
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        📚
+                    </span>
+
+                    <div>
+                        <h3 id="totalBooks">
+                            0
+                        </h3>
+
+                        <p>
+                            Total Books
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        📖
+                    </span>
+
+                    <div>
+                        <h3 id="availableBooks">
+                            0
+                        </h3>
+
+                        <p>
+                            Available Copies
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        👥
+                    </span>
+
+                    <div>
+                        <h3 id="totalMembers">
+                            0
+                        </h3>
+
+                        <p>
+                            Members
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        🔖
+                    </span>
+
+                    <div>
+                        <h3 id="activeBorrowings">
+                            0
+                        </h3>
+
+                        <p>
+                            Active Borrowings
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ADMIN NAVIGATION -->
+
+            <nav class="tabs">
+
+                <button
+                    class="tab-button active"
+                    onclick="showSection('booksSection', this)"
+                >
+                    📚 Books
+                </button>
+
+                <button
+                    class="tab-button"
+                    onclick="showSection('membersSection', this)"
+                >
+                    👥 Members
+                </button>
+
+                <button
+                    class="tab-button"
+                    onclick="showSection('borrowingsSection', this)"
+                >
+                    📖 Borrowings
+                </button>
+
+            </nav>
+
+
+            <!-- BOOKS -->
+
+            <section
+                id="booksSection"
+                class="content-section"
+            >
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>Books</h2>
+
+                        <p>
+                            Manage your library collection
+                        </p>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        onclick="openBookForm()"
+                    >
+                        + Add Book
+                    </button>
+
+                </div>
+
+
+                <div class="toolbar">
+
+                    <input
+                        type="text"
+                        id="bookSearch"
+                        placeholder="🔍 Search books..."
+                        oninput="filterBooks()"
+                    >
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Available</th>
+                                <th>Actions</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="booksTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- MEMBERS -->
+
+            <section
+                id="membersSection"
+                class="content-section hidden"
+            >
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>Members</h2>
+
+                        <p>
+                            Manage registered library members
+                        </p>
+
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        onclick="openMemberForm()"
+                    >
+                        + Add Member
+                    </button>
+
+                </div>
+
+
+                <div class="toolbar">
+
+                    <input
+                        type="text"
+                        id="memberSearch"
+                        placeholder="🔍 Search members..."
+                        oninput="filterMembers()"
+                    >
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="membersTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- BORROWINGS -->
+
+            <section
+                id="borrowingsSection"
+                class="content-section hidden"
+            >
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>Borrowings</h2>
+
+                        <p>
+                            Track borrowed and returned books
+                        </p>
+
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        onclick="openBorrowForm()"
+                    >
+                        + Borrow Book
+                    </button>
+
+                </div>
+
+
+                <div class="toolbar">
+
+                    <input
+                        type="text"
+                        id="borrowingSearch"
+                        placeholder="🔍 Search borrowing records..."
+                        oninput="filterBorrowings()"
+                    >
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>ID</th>
+                                <th>Book</th>
+                                <th>Member</th>
+                                <th>Borrow Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="borrowingsTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         USER DASHBOARD
+         ===================================================== -->
+
+    <div
+        id="userSection"
+        class="hidden"
+    >
+
+        <header class="header">
+
+            <div>
+
+                <h1>
+                    📚 Library Management System
+                </h1>
+
+                <p>
+                    User Dashboard
+                </p>
+
+            </div>
+
+            <button
+                class="logout-button"
+                onclick="logout()"
+            >
+                Logout
             </button>
 
-            <button class="tab-button" onclick="showSection('borrowingsSection', this)">
-                📖 Borrowings
-            </button>
-
-        </nav>
+        </header>
 
 
-        <!-- Books Section -->
-        <section id="booksSection" class="content-section">
+        <main class="container">
 
-            <div class="section-header">
-                <div>
-                    <h2>Books</h2>
-                    <p>Manage your library collection</p>
+
+            <!-- USER PROFILE -->
+
+            <section class="user-welcome">
+
+                <h2>
+                    Welcome, <span id="userName">User</span> 👋
+                </h2>
+
+                <p>
+                    Browse available books and manage your borrowings.
+                </p>
+
+            </section>
+
+
+            <!-- USER NAVIGATION -->
+
+            <nav class="tabs">
+
+                <button
+                    class="tab-button active"
+                    onclick="showUserSection('userBooksSection', this)"
+                >
+                    📚 Available Books
+                </button>
+
+
+                <button
+                    class="tab-button"
+                    onclick="showUserSection('myBorrowingsSection', this)"
+                >
+                    📖 My Borrowings
+                </button>
+
+
+                <button
+                    class="tab-button"
+                    onclick="showUserSection('profileSection', this)"
+                >
+                    👤 My Profile
+                </button>
+
+            </nav>
+
+
+            <!-- AVAILABLE BOOKS -->
+
+            <section
+                id="userBooksSection"
+                class="content-section"
+            >
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>
+                            Available Books
+                        </h2>
+
+                        <p>
+                            Browse books available for borrowing
+                        </p>
+
+                    </div>
+
                 </div>
 
-                <button class="primary-button" onclick="openBookForm()">
-                    + Add Book
-                </button>
-            </div>
 
-            <div class="toolbar">
-                <input
-                    type="text"
-                    id="bookSearch"
-                    placeholder="🔍 Search books..."
-                    oninput="filterBooks()"
-                >
-            </div>
+                <div class="toolbar">
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>Category</th>
-                            <th>Quantity</th>
-                            <th>Available</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
+                    <input
+                        type="text"
+                        id="userBookSearch"
+                        placeholder="🔍 Search available books..."
+                        oninput="filterUserBooks()"
+                    >
 
-                    <tbody id="booksTableBody"></tbody>
-                </table>
-            </div>
-
-        </section>
-
-
-        <!-- Members Section -->
-        <section id="membersSection" class="content-section hidden">
-
-            <div class="section-header">
-                <div>
-                    <h2>Members</h2>
-                    <p>Manage registered library members</p>
                 </div>
 
-                <button class="primary-button" onclick="openMemberForm()">
-                    + Add Member
-                </button>
-            </div>
 
-            <div class="toolbar">
-                <input
-                    type="text"
-                    id="memberSearch"
-                    placeholder="🔍 Search members..."
-                    oninput="filterMembers()"
-                >
-            </div>
+                <div class="book-grid" id="userBooksGrid"></div>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="membersTableBody"></tbody>
-                </table>
-            </div>
-
-        </section>
+            </section>
 
 
-        <!-- Borrowings Section -->
-        <section id="borrowingsSection" class="content-section hidden">
+            <!-- MY BORROWINGS -->
 
-            <div class="section-header">
-                <div>
-                    <h2>Borrowings</h2>
-                    <p>Track borrowed and returned books</p>
+            <section
+                id="myBorrowingsSection"
+                class="content-section hidden"
+            >
+
+                <div class="section-header">
+
+                    <div>
+
+                        <h2>
+                            My Borrowings
+                        </h2>
+
+                        <p>
+                            View your borrowing history
+                        </p>
+
+                    </div>
+
                 </div>
 
-                <button class="primary-button" onclick="openBorrowForm()">
-                    + Borrow Book
-                </button>
-            </div>
 
-            <div class="toolbar">
-                <input
-                    type="text"
-                    id="borrowingSearch"
-                    placeholder="🔍 Search borrowing records..."
-                    oninput="filterBorrowings()"
-                >
-            </div>
+                <div class="table-container">
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Book</th>
-                            <th>Member</th>
-                            <th>Borrow Date</th>
-                            <th>Return Date</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+                    <table>
 
-                    <tbody id="borrowingsTableBody"></tbody>
-                </table>
-            </div>
+                        <thead>
 
-        </section>
+                            <tr>
+                                <th>ID</th>
+                                <th>Book</th>
+                                <th>Author</th>
+                                <th>Borrow Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
 
-    </main>
+                        </thead>
+
+                        <tbody id="userBorrowingsTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
 
 
-    <!-- Modal -->
-    <div id="modal" class="modal hidden">
+            <!-- PROFILE -->
+
+            <section
+                id="profileSection"
+                class="content-section hidden"
+            >
+
+                <div class="profile-card">
+
+                    <div class="profile-icon">
+                        👤
+                    </div>
+
+                    <h2 id="profileName">
+                        User
+                    </h2>
+
+                    <p id="profileEmail">
+                        user@example.com
+                    </p>
+
+                    <p>
+                        Role:
+                        <strong id="profileRole">
+                            user
+                        </strong>
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL
+         ===================================================== -->
+
+    <div
+        id="modal"
+        class="modal hidden"
+    >
 
         <div class="modal-content">
 
-            <button class="close-button" onclick="closeModal()">
+            <button
+                class="close-button"
+                onclick="closeModal()"
+            >
                 &times;
             </button>
 
@@ -224,11 +846,16 @@
     </div>
 
 
-    <!-- Toast -->
-    <div id="toast" class="toast"></div>
+    <!-- TOAST -->
+
+    <div
+        id="toast"
+        class="toast"
+    ></div>
 
 
     <script src="script.js"></script>
 
 </body>
+
 </html>

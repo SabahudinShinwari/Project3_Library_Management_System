@@ -1,59 +1,94 @@
 const db = require("../config/db");
 
-// Get all borrowing records
+// =====================================================
+// GET ALL BORROWING RECORDS - ADMIN
+// =====================================================
+
 const getAllBorrowings = async () => {
     const [rows] = await db.query(`
         SELECT
             borrowings.id,
             books.title AS book_title,
-            members.name AS member_name,
-            members.email AS member_email,
+
+            COALESCE(users.name, members.name, 'Unknown') AS member_name,
+            COALESCE(users.email, members.email) AS member_email,
+
             borrowings.borrow_date,
             borrowings.return_date,
             borrowings.status
+
         FROM borrowings
-        INNER JOIN books ON borrowings.book_id = books.id
-        INNER JOIN members ON borrowings.member_id = members.id
+
+        INNER JOIN books
+            ON borrowings.book_id = books.id
+
+        LEFT JOIN users
+            ON borrowings.user_id = users.id
+
+        LEFT JOIN members
+            ON borrowings.member_id = members.id
+
         ORDER BY borrowings.id DESC
     `);
 
     return rows;
 };
+// =====================================================
+// GET ONE BORROWING RECORD
+// =====================================================
 
-// Get one borrowing record
 const getBorrowingById = async (id) => {
     const [rows] = await db.query(`
         SELECT
             borrowings.id,
             borrowings.book_id,
             borrowings.member_id,
+            borrowings.user_id,
+
             books.title AS book_title,
-            members.name AS member_name,
+
+            COALESCE(users.name, members.name, 'Unknown') AS member_name,
+            COALESCE(users.email, members.email) AS member_email,
+
             borrowings.borrow_date,
             borrowings.return_date,
             borrowings.status
+
         FROM borrowings
-        INNER JOIN books ON borrowings.book_id = books.id
-        INNER JOIN members ON borrowings.member_id = members.id
+
+        INNER JOIN books
+            ON borrowings.book_id = books.id
+
+        LEFT JOIN members
+            ON borrowings.member_id = members.id
+
+        LEFT JOIN users
+            ON borrowings.user_id = users.id
+
         WHERE borrowings.id = ?
     `, [id]);
 
     return rows[0];
 };
 
-// Borrow a book
+// =====================================================
+// BORROW A BOOK - ADMIN
+// =====================================================
+
 const borrowBook = async (bookId, memberId) => {
     const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        // Check whether the book exists and is available
+        // Check whether book exists and is available
         const [books] = await connection.query(
-            `SELECT available_quantity
-             FROM books
-             WHERE id = ?
-             FOR UPDATE`,
+            `
+            SELECT available_quantity
+            FROM books
+            WHERE id = ?
+            FOR UPDATE
+            `,
             [bookId]
         );
 
@@ -65,11 +100,13 @@ const borrowBook = async (bookId, memberId) => {
             throw new Error("Book is currently unavailable");
         }
 
-        // Check whether the member exists
+        // Check whether member exists
         const [members] = await connection.query(
-            `SELECT id
-             FROM members
-             WHERE id = ?`,
+            `
+            SELECT id
+            FROM members
+            WHERE id = ?
+            `,
             [memberId]
         );
 
@@ -79,17 +116,21 @@ const borrowBook = async (bookId, memberId) => {
 
         // Create borrowing record
         const [result] = await connection.query(
-            `INSERT INTO borrowings
-             (book_id, member_id, borrow_date, status)
-             VALUES (?, ?, CURDATE(), 'Borrowed')`,
+            `
+            INSERT INTO borrowings
+            (book_id, member_id, borrow_date, status)
+            VALUES (?, ?, CURDATE(), 'Borrowed')
+            `,
             [bookId, memberId]
         );
 
-        // Reduce available quantity
+        // Decrease available quantity
         await connection.query(
-            `UPDATE books
-             SET available_quantity = available_quantity - 1
-             WHERE id = ?`,
+            `
+            UPDATE books
+            SET available_quantity = available_quantity - 1
+            WHERE id = ?
+            `,
             [bookId]
         );
 
@@ -106,19 +147,26 @@ const borrowBook = async (bookId, memberId) => {
     }
 };
 
-// Return a book
+// =====================================================
+// RETURN A BOOK - ADMIN
+// =====================================================
+
 const returnBook = async (id) => {
     const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        // Find the borrowing record
+        // Find borrowing record
         const [borrowings] = await connection.query(
-            `SELECT book_id, status
-             FROM borrowings
-             WHERE id = ?
-             FOR UPDATE`,
+            `
+            SELECT
+                book_id,
+                status
+            FROM borrowings
+            WHERE id = ?
+            FOR UPDATE
+            `,
             [id]
         );
 
@@ -134,18 +182,23 @@ const returnBook = async (id) => {
 
         // Update borrowing record
         await connection.query(
-            `UPDATE borrowings
-             SET return_date = CURDATE(),
-                 status = 'Returned'
-             WHERE id = ?`,
+            `
+            UPDATE borrowings
+            SET
+                return_date = CURDATE(),
+                status = 'Returned'
+            WHERE id = ?
+            `,
             [id]
         );
 
         // Increase available quantity
         await connection.query(
-            `UPDATE books
-             SET available_quantity = available_quantity + 1
-             WHERE id = ?`,
+            `
+            UPDATE books
+            SET available_quantity = available_quantity + 1
+            WHERE id = ?
+            `,
             [bookId]
         );
 
@@ -161,6 +214,10 @@ const returnBook = async (id) => {
         connection.release();
     }
 };
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
     getAllBorrowings,

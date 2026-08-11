@@ -60,6 +60,18 @@ Project3_Library_Management_System/
 
 ## API Endpoints
 
+## Password Reset Email Setup
+
+Password reset links are sent through Gmail. Create a Gmail app password, then create `backend/.env` with:
+
+```env
+GMAIL_USER=your-gmail-address@gmail.com
+GMAIL_APP_PASSWORD=your-16-character-gmail-app-password
+RESET_FRONTEND_URL=http://127.0.0.1:5500/frontend/index.html
+```
+
+Use the Gmail account's app password, not its normal account password. Gmail app passwords require 2-Step Verification to be enabled. Restart the backend after changing `.env`.
+
 ### Books
 
 - GET `/api/books`
