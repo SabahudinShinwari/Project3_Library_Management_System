@@ -1,6 +1,17 @@
 # Library Management System
 
-A full-stack Library Management System developed during my Full Stack Development Internship at DecodeLabs.
+A full-stack Library Management System developed during my Full Stack Development Internship at DecodeLabs. The system includes user authentication, book management, borrowing management, database integration, and RESTful API development.
+
+## 📸 Screenshots
+
+### Login Page
+![Login Page](screenshots/login.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/admin_dashboard.png)
+
+### User Dashboard
+![User Dashboard](screenshots/user_dashboard.png)
 
 ## Technologies Used
 
@@ -22,7 +33,8 @@ A full-stack Library Management System developed during my Full Stack Developmen
 
 ## Features
 
-- Add, view, update, and delete books
+- User authentication and login system
+- Password reset through email
 - Add, view, update, and delete members
 - Borrow books
 - Return books
@@ -54,23 +66,15 @@ Project3_Library_Management_System/
 │   ├── style.css
 │   └── script.js
 │
+├── screenshots/
+│   ├── login.png
+│   ├── admin_dashboard.png
+│   └── user_dashboard.png
+│
 ├── .gitignore
-└── README.md
-```
+└── README.md ```
 
 ## API Endpoints
-
-## Password Reset Email Setup
-
-Password reset links are sent through Gmail. Create a Gmail app password, then create `backend/.env` with:
-
-```env
-GMAIL_USER=your-gmail-address@gmail.com
-GMAIL_APP_PASSWORD=your-16-character-gmail-app-password
-RESET_FRONTEND_URL=http://127.0.0.1:5500/frontend/index.html
-```
-
-Use the Gmail account's app password, not its normal account password. Gmail app passwords require 2-Step Verification to be enabled. Restart the backend after changing `.env`.
 
 ### Books
 
@@ -94,6 +98,16 @@ Use the Gmail account's app password, not its normal account password. Gmail app
 - GET `/api/borrowings/:id`
 - POST `/api/borrowings`
 - PUT `/api/borrowings/:id/return`
+
+## Password Reset Email Setup
+
+Password reset links are sent through Gmail. Create a Gmail app password, then create `backend/.env` with:
+
+```env
+GMAIL_USER=your-gmail-address@gmail.com
+GMAIL_APP_PASSWORD=your-16-character-gmail-app-password
+RESET_FRONTEND_URL=http://127.0.0.1:5500/frontend/index.html
+```
 
 ## Author
 
